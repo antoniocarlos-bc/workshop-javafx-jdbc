@@ -2,6 +2,8 @@ package gui;
 
 import java.io.IOException;
 import java.net.URL;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +25,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -30,6 +33,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.Pane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.StringConverter;
 import model.entities.Seller;
 import model.services.SellerService;
 
@@ -45,13 +49,13 @@ public class SellerListController implements Initializable, DataChangeListener {
 
 	@FXML
 	TableColumn<Seller, String> tableColumnName;
-	
+
 	@FXML
 	TableColumn<Seller, String> tableColumnEmail;
-	
+
 	@FXML
 	TableColumn<Seller, Date> tableColumnBirthDate;
-	
+
 	@FXML
 	TableColumn<Seller, Double> tableColumnBaseSalary;
 
@@ -93,8 +97,8 @@ public class SellerListController implements Initializable, DataChangeListener {
 		tableColumnBirthDate.setCellValueFactory(new PropertyValueFactory<>("birthDate"));
 		Utils.formatTableColumnDate(tableColumnBirthDate, "dd/MM/yyyy");
 		tableColumnBaseSalary.setCellValueFactory(new PropertyValueFactory<>("baseSalary"));
-        Utils.formatTableColumnDouble(tableColumnBaseSalary, 2); 
-		
+		Utils.formatTableColumnDouble(tableColumnBaseSalary, 2);
+
 		Stage stage = (Stage) Main.getMainScene().getWindow();
 		tableViewSeller.prefHeightProperty().bind(stage.heightProperty());
 
@@ -158,8 +162,7 @@ public class SellerListController implements Initializable, DataChangeListener {
 					return;
 				}
 				setGraphic(button);
-				button.setOnAction(
-						event -> createDialogForm(obj, "/gui/SellerForm.fxml", Utils.currentStage(event)));
+				button.setOnAction(event -> createDialogForm(obj, "/gui/SellerForm.fxml", Utils.currentStage(event)));
 			}
 		});
 	}
@@ -184,19 +187,47 @@ public class SellerListController implements Initializable, DataChangeListener {
 
 	private void removeEntity(Seller obj) {
 		Optional<ButtonType> result = Alerts.showConfirmation("Confirmation", "Are you sure to delete?");
-		if(result.get() == ButtonType.OK) {
-			if(service == null) {
+		if (result.get() == ButtonType.OK) {
+			if (service == null) {
 				throw new IllegalStateException("Service was null");
 			}
 			try {
-			service.remove(obj);
-			updateTableView();
-			
-			}catch(DbIntegrityException e) {
-				Alerts.showAlert("Error removing object",null, e.getMessage(), AlertType.ERROR);
-				
+				service.remove(obj);
+				updateTableView();
+
+			} catch (DbIntegrityException e) {
+				Alerts.showAlert("Error removing object", null, e.getMessage(), AlertType.ERROR);
+
 			}
 		}
+	}
+
+	public static void formatDatePicker(DatePicker datePicker, String format) {
+		datePicker.setConverter(new StringConverter<LocalDate>() {
+
+			DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(format);
+			{
+				datePicker.setPromptText(format.toLowerCase());
+			}
+
+			@Override
+			public String toString(LocalDate date) {
+				if (date != null) {
+					return dateFormatter.format(date);
+				} else {
+					return "";
+				}
+			}
+
+			@Override
+			public LocalDate fromString(String string) {
+				if (string != null && !string.isEmpty()) {
+					return LocalDate.parse(string, dateFormatter);
+				} else {
+					return null;
+				}
+			}
+		});
 	}
 
 }
